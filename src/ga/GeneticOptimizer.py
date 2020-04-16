@@ -2,12 +2,9 @@ import numpy as np
 
 
 class GeneticOptimizer:
-    def __init__(self, eval_function, search_space: dict, iterations,
+    def __init__(self, search_space: dict,
                  population_size, selection_rate, crossover_rate, mutation_rate):
-        self.iterations = iterations
         self.search_space = search_space
-        self.eval_function = eval_function
-        self.population = Population()
 
         # GA params
         self.population_size = population_size
@@ -15,55 +12,84 @@ class GeneticOptimizer:
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
 
+        self.hist_params = []
+        self.hist_target = []
+
+        members = np.array([PopulationMember(search_space) for _ in range(population_size)])
+        self.population = Population(members)
+        self.best_solution = None
+
+    def optimize(self, eval_function, iterations, target="min"):
+        for i in range(iterations):
+            self.population.fitness(eval_function, target=target)
+
+            best_member_idx = np.argmin(self.population.nominal_fitness)
+            self.hist_params.append(self.population.members[best_member_idx].params)
+            self.hist_target.append(self.population.members[best_member_idx].fitness)
+
+            self.population.selection(self.selection_rate)
+            self.population.crossover(self.crossover_rate)
+            self.population.mutation(self.mutation_rate)
+
+            if not len(self.population.members):
+                print("Optimization stopped after {} iterations".format(i))
+                break
+
+        best_idx = np.argmin(self.hist_target)
+        self.best_solution = self.hist_params[best_idx]
+
 
 class Population:
     def __init__(self, members=None):
         self.members = members
         self.size = len(members)
-        self.fitness = None
+        self.nominal_fitness = None
         self.normalized_fitness = None
 
-    def population_fitness(self, eval_function, target="min"):
+    def fitness(self, eval_function, target="min"):
         assert target in ("min", "max")
-
-        self.fitness = np.array([member.calculate_fitness(eval_function) for member in self.members])
+        [member.calculate_fitness(eval_function) for member in self.members]
+        self.nominal_fitness = np.array([member.fitness for member in self.members])
 
         if target == "max":
-            total_fitness = np.sum(self.fitness)
-            self.normalized_fitness = self.fitness / total_fitness
+            total_fitness = np.sum(self.nominal_fitness)
+            self.normalized_fitness = self.nominal_fitness / total_fitness
         elif target == "min":
-            total_fitness = np.sum(1 / self.fitness)
-            self.normalized_fitness = (1 / self.fitness) / total_fitness
+            total_fitness = np.sum(1 / self.nominal_fitness)
+            self.normalized_fitness = (1 / self.nominal_fitness) / total_fitness
 
     def selection(self, selection_rate):
-        self.members = np.choice(self.members, size=int(selection_rate * self.size), replace=False, p=self.fitness)
+        self.members = np.random.choice(self.members, size=int(selection_rate * self.size), replace=False, p=self.normalized_fitness)
         self.size = len(self.members)
 
-    def pair_parents(self):
-        # parowanie wszystkich po dwa, może jakiś np.array,
-        # co dla nieparzystych - jakiś losowy?
-        # crossover dla każdej pary
-        pass
+    def crossover(self, crossover_rate):
+        pairs = np.random.choice(self.members, self.size//2*2, replace=False).reshape(self.size//2, 2)
+        for parents in pairs:
+            parents[0].cross_members(parents[1], crossover_rate)
+
+    def mutation(self, mutation_rate, min_genoms=1):
+        for member in self.members:
+            member.mutate(mutation_rate, min_genoms)
 
 
 class PopulationMember:
-    def __init__(self, fitness, search_space):
+    def __init__(self, search_space):
         self.params = {name: param.get_value() for name, param in search_space.items()}
+        self.search_space = search_space
         self.fitness = None
         self.normalized_fitness = None
 
     def calculate_fitness(self, eval_function):
-        fitness = eval_function(**self.params)
-        return fitness
+        self.fitness = eval_function(**self.params)
 
     def mutate(self, mutation_rate, min_genoms=1):
         size = max(min_genoms, int(mutation_rate * len(self.params)))
-        chosen_params = np.random.choice(self.params.keys(), size=size, replace=False)
+        chosen_params = np.random.choice([*self.params], size=size, replace=False)
 
         for param in chosen_params:
-            self.params[param] = self.params[param].get_value()
+            self.params[param] = self.search_space[param].get_value()
 
-    def crossover(self, other, crossover_rate):
+    def cross_members(self, other, crossover_rate):
         # Uniform crossover
         if np.random.random() < crossover_rate:
             param_list = self.params.keys()
