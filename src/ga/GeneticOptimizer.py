@@ -1,9 +1,9 @@
 import numpy as np
+from typing import Callable
 
 
 class GeneticOptimizer:
-    def __init__(self, search_space: dict,
-                 population_size, selection_rate, crossover_rate, mutation_rate):
+    def __init__(self, search_space: dict, population_size, selection_rate, crossover_rate, mutation_rate):
         self.search_space = search_space
 
         # GA params
@@ -20,7 +20,7 @@ class GeneticOptimizer:
         self.best_solution = None
 
     def optimize(self, eval_function, iterations, target="min", include_history=True):
-        argbest = np.argmin if target == "min" else np.argmax
+        argbest: Callable = np.argmin if target == "min" else np.argmax
         for i in range(iterations):
             self.population.fitness(eval_function, target=target)
 
