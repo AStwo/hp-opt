@@ -24,10 +24,9 @@ class GeneticOptimizer:
         for i in range(iterations):
             self.population.fitness(eval_function, target=target)
 
-            if include_history:
-                best_member_idx = argbest(self.population.nominal_fitness)
-                self.hist_params.append(self.population.members[best_member_idx].params)
-                self.hist_target.append(self.population.members[best_member_idx].fitness)
+            best_member_idx = argbest(self.population.nominal_fitness)
+            self.hist_params.append(self.population.members[best_member_idx].params)
+            self.hist_target.append(self.population.members[best_member_idx].fitness)
 
             self.population.selection(self.selection_rate)
             self.population.crossover(self.crossover_rate)
