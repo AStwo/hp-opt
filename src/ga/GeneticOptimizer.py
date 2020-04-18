@@ -129,7 +129,11 @@ class PopulationMember:
             param_list = self.params.keys()
             points = np.random.randint(0, 2, size=len(param_list))
 
-            self.params = {param: self.params[param] if add_to_self else other.params[param]
+            self_params = {param: self.params[param] if add_to_self else other.params[param]
                            for add_to_self, param in zip(points, param_list)}
-            other.params = {param: self.params[param] if not add_to_self else other.params[param]
+            other_params = {param: self.params[param] if not add_to_self else other.params[param]
                             for add_to_self, param in zip(points, param_list)}
+
+            self.params = self_params
+            other.params = other_params
+
