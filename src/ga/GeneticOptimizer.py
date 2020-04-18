@@ -51,12 +51,17 @@ class Population:
         [member.calculate_fitness(eval_function) for member in self.members]
         self.nominal_fitness = np.array([member.fitness for member in self.members])
 
+        # Rescale fitness to [0, 1]
+        dummy_min_value = self.nominal_fitness.min() - 0.00001  # Add false minimum to avoid division by zero
+        scaled_fitness = self.rescale_min_max(np.append(self.nominal_fitness, dummy_min_value))
+        scaled_fitness = scaled_fitness[scaled_fitness > 0]
+
         if target == "max":
-            total_fitness = np.sum(self.nominal_fitness)
-            self.normalized_fitness = self.nominal_fitness / total_fitness
+            total_fitness = np.sum(scaled_fitness)
+            self.normalized_fitness = scaled_fitness / total_fitness
         elif target == "min":
-            total_fitness = np.sum(1 / self.nominal_fitness)
-            self.normalized_fitness = (1 / self.nominal_fitness) / total_fitness
+            total_fitness = np.sum(1 / scaled_fitness)
+            self.normalized_fitness = (1 / scaled_fitness) / total_fitness
 
     def selection(self, selection_rate):
         self.members = np.random.choice(self.members, size=int(selection_rate * self.size), replace=False, p=self.normalized_fitness)
@@ -70,6 +75,10 @@ class Population:
     def mutation(self, mutation_rate, min_genoms=1):
         for member in self.members:
             member.mutate(mutation_rate, min_genoms)
+
+    @staticmethod
+    def rescale_min_max(x):
+        return (x - x.min()) / (x.max() - x.min())
 
 
 class PopulationMember:
