@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from typing import Callable
 
@@ -19,8 +20,9 @@ class GeneticOptimizer:
         self.population = Population(members)
         self.best_solution = None
 
-    def optimize(self, eval_function, iterations, target="min", include_history=True):
+    def optimize(self, eval_function, iterations, early_stop=None, target="min"):
         argbest: Callable = np.argmin if target == "min" else np.argmax
+        early_stop_counter = 0
         for i in range(iterations):
             self.population.fitness(eval_function, target=target)
 
@@ -28,16 +30,37 @@ class GeneticOptimizer:
             self.hist_params.append(self.population.members[best_member_idx].params)
             self.hist_target.append(self.population.members[best_member_idx].fitness)
 
+            try:
+                if (target == "min" and self.population.members[best_member_idx].fitness < self.best_solution)\
+                        or (target == "max" and self.population.members[best_member_idx].fitness > self.best_solution):
+                    self.best_solution = self.population.members[best_member_idx].fitness
+                    early_stop_counter = 0
+            except TypeError:
+                self.best_solution = self.population.members[best_member_idx].fitness
+
             self.population.selection(self.selection_rate)
             self.population.crossover(self.crossover_rate)
             self.population.mutation(self.mutation_rate)
 
-            if not len(self.population.members):
-                print("Optimization stopped after {} iterations".format(i))
+            if self.optimization_stop_conditions(i, early_stop, early_stop_counter):
                 break
+
+            early_stop_counter += 1
 
         best_idx = argbest(self.hist_target)
         self.best_solution = self.hist_params[best_idx]
+
+    def optimization_stop_conditions(self, iteration, early_stop, early_stop_counter):
+        if not len(self.population.members):
+            print("Optimization stopped after {} iterations".format(iteration+1))
+            return True
+        if early_stop is not None and early_stop_counter >= early_stop:
+            print("Early stop criteria met after {} iterations".format(iteration+1))
+            return True
+        return False
+
+    def plot_solution_history(self):
+        plt.scatter(x=range(len(self.hist_target)), y=self.hist_target)
 
 
 class Population:
@@ -65,11 +88,12 @@ class Population:
             self.normalized_fitness = (1 / scaled_fitness) / total_fitness
 
     def selection(self, selection_rate):
-        self.members = np.random.choice(self.members, size=int(selection_rate * self.size), replace=False, p=self.normalized_fitness)
+        self.members = np.random.choice(self.members, size=int(selection_rate * self.size), replace=False,
+                                        p=self.normalized_fitness)
         self.size = len(self.members)
 
     def crossover(self, crossover_rate):
-        pairs = np.random.choice(self.members, self.size//2*2, replace=False).reshape(self.size//2, 2)
+        pairs = np.random.choice(self.members, self.size // 2 * 2, replace=False).reshape(self.size // 2, 2)
         for parents in pairs:
             parents[0].cross_members(parents[1], crossover_rate)
 
