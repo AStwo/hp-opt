@@ -19,6 +19,7 @@ class GeneticOptimizer:
         members = np.array([PopulationMember(search_space) for _ in range(population_size)])
         self.population = Population(members)
         self.best_solution = None
+        self.best_target = None
 
     def optimize(self, eval_function, iterations, early_stop=None, target="min"):
         argbest: Callable = np.argmin if target == "min" else np.argmax
@@ -26,7 +27,7 @@ class GeneticOptimizer:
         for i in range(iterations):
             self.population.fitness(eval_function, target=target)
 
-            best_member_idx = argbest(self.population.nominal_fitness)
+            best_member_idx = argbest(self.population.normalized_fitness)
             self.hist_params.append(self.population.members[best_member_idx].params)
             self.hist_target.append(self.population.members[best_member_idx].fitness)
 
@@ -49,6 +50,7 @@ class GeneticOptimizer:
 
         best_idx = argbest(self.hist_target)
         self.best_solution = self.hist_params[best_idx]
+        self.best_target = self.hist_target[best_idx]
 
     def optimization_stop_conditions(self, iteration, early_stop, early_stop_counter):
         if not len(self.population.members):
