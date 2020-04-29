@@ -28,3 +28,18 @@ class UniformInt:
         return max(min(mutated_value, self.max), self.min)
 
 
+class Choice:
+    def __init__(self, name, values):
+        self.name = name
+        self.values = np.array(values)
+
+    def get_value(self):
+        return np.random.choice(self.values)
+
+    def mutate_param(self, value):
+        try:
+            return np.random.choice(self.values[self.values != value])
+        except ValueError:
+            # When len(self.values) == 1
+            return value
+
