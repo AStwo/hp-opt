@@ -62,7 +62,8 @@ class GeneticOptimizer:
         return False
 
     def plot_solution_history(self):
-        plt.scatter(x=range(len(self.hist_target)), y=self.hist_target)
+        plt.scatter(x=range(len(self.hist_target)), y=self.hist_target, s=10)
+        plt.scatter(x=np.where(np.array(self.hist_target) == self.best_target)[0][0], y=self.best_target, color="red")
 
 
 class Population:
@@ -81,13 +82,18 @@ class Population:
             total_fitness = np.sum(self.nominal_fitness)
             self.normalized_fitness = self.nominal_fitness / total_fitness
         elif target == "min":
-            total_fitness = np.sum(1 / self.nominal_fitness)
-            self.normalized_fitness = (1 / self.nominal_fitness) / total_fitness
+            if np.all(self.nominal_fitness == np.zeros_like(self.nominal_fitness)):
+                scaled_fitness = np.ones_like(self.nominal_fitness)
+            elif np.all(self.nominal_fitness == self.nominal_fitness[0]):
+                scaled_fitness = np.ones_like(self.nominal_fitness)
+            else:
+                scaled_fitness = self.rescale(self.nominal_fitness, 1, 2)
+
+            total_fitness = np.sum(1 / scaled_fitness)
+            self.normalized_fitness = (1 / scaled_fitness) / total_fitness
 
     def selection(self, selection_rate):
-        self.members = np.random.choice(self.members, size=int(selection_rate * self.size), replace=False,
-                                        p=self.normalized_fitness)
-        self.size = len(self.members)
+        self.members = np.random.choice(self.members, size=self.size, replace=True, p=self.normalized_fitness)
 
     def crossover(self, crossover_rate):
         pairs = np.random.choice(self.members, self.size // 2 * 2, replace=False).reshape(self.size // 2, 2)
@@ -99,8 +105,8 @@ class Population:
             member.mutate(mutation_rate)
 
     @staticmethod
-    def rescale_min_max(x):
-        return (x - x.min()) / (x.max() - x.min())
+    def rescale(x, min_value=0, max_value=1):
+        return (x - x.min()) / (x.max() - x.min()) * (max_value - min_value) + min_value
 
 
 class PopulationMember:
