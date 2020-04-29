@@ -94,9 +94,9 @@ class Population:
         for parents in pairs:
             parents[0].cross_members(parents[1], crossover_rate)
 
-    def mutation(self, mutation_rate, min_genoms=1):
+    def mutation(self, mutation_rate):
         for member in self.members:
-            member.mutate(mutation_rate, min_genoms)
+            member.mutate(mutation_rate)
 
     @staticmethod
     def rescale_min_max(x):
@@ -113,12 +113,10 @@ class PopulationMember:
     def calculate_fitness(self, eval_function):
         self.fitness = eval_function(**self.params)
 
-    def mutate(self, mutation_rate, min_genoms=1):
-        size = max(min_genoms, int(mutation_rate * len(self.params)))
-        chosen_params = np.random.choice([*self.params], size=size, replace=False)
-
-        for param in chosen_params:
-            self.params[param] = self.search_space[param].get_value()
+    def mutate(self, mutation_rate):
+        if np.random.random() < mutation_rate:
+            param = np.random.choice(list(self.params))
+            self.params[param] = self.search_space[param].mutate_param(self.params[param])
 
     def cross_members(self, other, crossover_rate):
         # Uniform crossover
