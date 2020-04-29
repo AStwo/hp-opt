@@ -4,12 +4,11 @@ from typing import Callable
 
 
 class GeneticOptimizer:
-    def __init__(self, search_space: dict, population_size, selection_rate, crossover_rate, mutation_rate):
+    def __init__(self, search_space: dict, population_size, crossover_rate, mutation_rate):
         self.search_space = search_space
 
         # GA params
         self.population_size = population_size
-        self.selection_rate = selection_rate
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
 
@@ -39,7 +38,7 @@ class GeneticOptimizer:
             except TypeError:
                 self.best_solution = self.population.members[best_member_idx].fitness
 
-            self.population.selection(self.selection_rate)
+            self.population.selection()
             self.population.crossover(self.crossover_rate)
             self.population.mutation(self.mutation_rate)
 
@@ -92,7 +91,7 @@ class Population:
             total_fitness = np.sum(1 / scaled_fitness)
             self.normalized_fitness = (1 / scaled_fitness) / total_fitness
 
-    def selection(self, selection_rate):
+    def selection(self):
         self.members = np.random.choice(self.members, size=self.size, replace=True, p=self.normalized_fitness)
 
     def crossover(self, crossover_rate):
