@@ -20,43 +20,56 @@ class GeneticOptimizer:
         self.best_solution = None
         self.best_target = None
 
-    def optimize(self, eval_function, iterations, early_stop=None, target="min"):
-        argbest: Callable = np.argmin if target == "min" else np.argmax
+    def optimize(self, eval_function, iterations=None, metric_target=None, early_stop=None, objective="min"):
+        assert iterations is not None or metric_target is not None, "No stop conditions were specified."
+
+        argbest: Callable = np.argmin if objective == "min" else np.argmax
         early_stop_counter = 0
-        for i in range(iterations):
-            self.population.fitness(eval_function, target=target)
+        i = 0
+
+        while True:
+            self.population.fitness(eval_function, objective=objective)
 
             best_member_idx = argbest(self.population.normalized_fitness)
             self.hist_params.append(self.population.members[best_member_idx].params)
             self.hist_target.append(self.population.members[best_member_idx].fitness)
 
             try:
-                if (target == "min" and self.population.members[best_member_idx].fitness < self.best_solution)\
-                        or (target == "max" and self.population.members[best_member_idx].fitness > self.best_solution):
+                if (objective == "min" and self.population.members[best_member_idx].fitness < self.best_solution)\
+                        or (objective == "max" and self.population.members[best_member_idx].fitness > self.best_solution):
                     self.best_solution = self.population.members[best_member_idx].fitness
                     early_stop_counter = 0
             except TypeError:
+                # Assign best_solution during first iteration
                 self.best_solution = self.population.members[best_member_idx].fitness
 
             self.population.selection()
             self.population.crossover(self.crossover_rate)
             self.population.mutation(self.mutation_rate)
 
-            if self.optimization_stop_conditions(i, early_stop, early_stop_counter):
+            if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter, objective, metric_target):
                 break
-
-            early_stop_counter += 1
+            else:
+                early_stop_counter += 1
+                i += 1
 
         best_idx = argbest(self.hist_target)
         self.best_solution = self.hist_params[best_idx]
         self.best_target = self.hist_target[best_idx]
 
-    def optimization_stop_conditions(self, iteration, early_stop, early_stop_counter):
+    def optimization_stop_conditions(self, i, iterations, early_stop, early_stop_counter, objective, metric_target):
         if not len(self.population.members):
-            print("Optimization stopped after {} iterations".format(iteration+1))
+            print("Optimization stopped after {} iterations".format(i + 1))
+            return True
+        if i >= iterations:
+            print("Optimization stopped reaching maximum number of iterations")
             return True
         if early_stop is not None and early_stop_counter >= early_stop:
-            print("Early stop criteria met after {} iterations".format(iteration+1))
+            print("Early stop criteria met after {} iterations".format(i + 1))
+            return True
+        if (metric_target is not None and objective == "min" and self.hist_target[-1] <= metric_target) \
+                or (metric_target is not None and objective == "max" and self.hist_target[-1] >= metric_target):
+            print("Metric target reached after {} iterations".format(i + 1))
             return True
         return False
 
@@ -72,15 +85,15 @@ class Population:
         self.nominal_fitness = None
         self.normalized_fitness = None
 
-    def fitness(self, eval_function, target="min"):
-        assert target in ("min", "max")
+    def fitness(self, eval_function, objective="min"):
+        assert objective in ("min", "max")
         [member.calculate_fitness(eval_function) for member in self.members]
         self.nominal_fitness = np.array([member.fitness for member in self.members])
 
-        if target == "max":
+        if objective == "max":
             total_fitness = np.sum(self.nominal_fitness)
             self.normalized_fitness = self.nominal_fitness / total_fitness
-        elif target == "min":
+        elif objective == "min":
             if np.all(self.nominal_fitness == np.zeros_like(self.nominal_fitness)):
                 scaled_fitness = np.ones_like(self.nominal_fitness)
             elif np.all(self.nominal_fitness == self.nominal_fitness[0]):
