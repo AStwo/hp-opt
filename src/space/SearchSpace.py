@@ -10,8 +10,12 @@ class Uniform:
     def get_value(self):
         return np.random.uniform(self.min, self.max)
 
-    def mutate_param(self, value):
+    def mutate_param_old(self, value):
         return max(min(value * (1 + np.random.uniform(-0.2, 0.2)), self.max), self.min)
+
+    def mutate_param(self, value, i, i_max):
+        mutated_value = value + ((1-i/i_max)**2) * np.random.uniform(-1, 1) * (self.max-self.min)
+        return max(min(mutated_value, self.max), self.min)
 
     def cross_param(self, self_value, other_value, alpha=0.5):
         interval_length = (1 + 2 * alpha) * abs(self_value - other_value)
@@ -35,7 +39,7 @@ class UniformInt:
     def get_value(self):
         return np.random.randint(self.min, self.max)
 
-    def mutate_param(self, value):
+    def mutate_param(self, value, i, i_max):
         mutated_value = round(value * np.random.uniform(0, 0.2) * np.random.choice([-1, 1]))
         return max(min(mutated_value, self.max), self.min)
 
@@ -62,7 +66,7 @@ class Choice:
     def get_value(self):
         return np.random.choice(self.values)
 
-    def mutate_param(self, value):
+    def mutate_param(self, value, i, i_max):
         try:
             return np.random.choice(self.values[self.values != value])
         except ValueError:

@@ -44,7 +44,7 @@ class GeneticOptimizer:
 
             self.population.selection()
             self.population.crossover(self.crossover_rate)
-            self.population.mutation(self.mutation_rate)
+            self.population.mutation(self.mutation_rate, i, iterations)
 
             if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter, objective, metric_target):
                 break
@@ -112,10 +112,10 @@ class Population:
             if np.random.rand() < crossover_rate:
                 parents[0].cross_members(parents[1])
 
-    def mutation(self, mutation_rate):
+    def mutation(self, mutation_rate, i, i_max):
         for member in self.members:
             if np.random.random() < mutation_rate:
-                member.mutate()
+                member.mutate(i, i_max)
 
     @staticmethod
     def rescale(x, min_value=0, max_value=1):
@@ -132,9 +132,9 @@ class PopulationMember:
     def calculate_fitness(self, eval_function):
         self.fitness = eval_function(**self.params)
 
-    def mutate(self):
+    def mutate(self, i, i_max):
         param = np.random.choice(list(self.params))
-        self.params[param] = self.search_space[param].mutate_param(self.params[param])
+        self.params[param] = self.search_space[param].mutate_param(self.params[param], i, i_max)
 
     def cross_members(self, other):
         for param in self.params.keys():
