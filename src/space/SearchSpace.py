@@ -10,12 +10,26 @@ class Uniform:
     def get_value(self):
         return np.random.uniform(self.min, self.max)
 
-    def mutate_param_old(self, value):
-        return max(min(value * (1 + np.random.uniform(-0.2, 0.2)), self.max), self.min)
-
     def mutate_param(self, value, i, i_max):
-        mutated_value = value + ((1-i/i_max)**2) * np.random.uniform(-1, 1) * (self.max-self.min)
-        return max(min(mutated_value, self.max), self.min)
+        a = 1
+        # return max(min(value * (1 + np.random.uniform(-a, a)), self.max), self.min)
+        if np.random.choice([0, 1]):
+            r = np.random.uniform(self.max - value)
+        else:
+            r = -np.random.uniform(value - self.min)
+
+        # return_val = value + np.random.uniform(-0.5, 0.5) * (self.max - self.min)
+        # return max(min(return_val, self.max), self.min)
+
+        return value + r * (1-np.random.rand()**((1-i/i_max)**1.5))
+        # return value + r * (1-i/i_max)**5
+        # return value + np.random.uniform(self.min, self.max) # * (1 - i/i_max)**2
+
+
+    # def mutate_param(self, value, i, i_max):
+    #     a = 0.5
+    #     mutated_value = value + ((1-i/i_max)**2) * np.random.uniform(-a, a) * (self.max - self.min)
+    #     return max(min(mutated_value, self.max), self.min)
 
     def cross_param(self, self_value, other_value, alpha=0.5):
         interval_length = (1 + 2 * alpha) * abs(self_value - other_value)
