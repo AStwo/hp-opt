@@ -78,8 +78,8 @@ class GeneticOptimizer:
 
 
 class Population:
-    def __init__(self, size, member_types):
-        self.members = np.array([PopulationMember(member_types) for _ in range(size)])
+    def __init__(self, size, search_space):
+        self.members = np.array([PopulationMember(search_space) for _ in range(size)])
         self.size = size
         self.nominal_fitness = None
         self.normalized_fitness = None
