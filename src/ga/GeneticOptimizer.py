@@ -15,8 +15,7 @@ class GeneticOptimizer:
         self.hist_params = []
         self.hist_target = []
 
-        members = np.array([PopulationMember(search_space) for _ in range(population_size)])
-        self.population = Population(members)
+        self.population = Population(population_size, search_space)
         self.best_solution = None
         self.best_target = None
 
@@ -79,9 +78,9 @@ class GeneticOptimizer:
 
 
 class Population:
-    def __init__(self, members=None):
-        self.members = members
-        self.size = len(members)
+    def __init__(self, size, member_types):
+        self.members = np.array([PopulationMember(member_types) for _ in range(size)])
+        self.size = size
         self.nominal_fitness = None
         self.normalized_fitness = None
 
