@@ -19,8 +19,10 @@ class GeneticOptimizer:
         self.best_solution = None
         self.best_target = None
 
-    def optimize(self, eval_function, iterations=None, metric_target=None, early_stop=None, objective="min"):
+    def optimize(self, eval_function, iterations=None, metric_target=None, early_stop=None, objective="min", seed=None):
         assert iterations is not None or metric_target is not None, "No stop conditions were specified."
+        if seed is not None:
+            np.random.seed(seed)
 
         argbest: Callable = np.argmin if objective == "min" else np.argmax
         early_stop_counter = 0
