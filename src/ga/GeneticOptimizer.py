@@ -135,9 +135,9 @@ class PopulationMember:
             param = np.random.choice(list(self.params))
             self.params[param] = self.search_space[param].mutate_param(self.params[param])
 
-    def cross_members(self, other, crossover_rate):
+    def cross_members_(self, other, crossover_rate):
         # Uniform crossover
-        if np.random.random() < crossover_rate:
+        if np.random.rand() < crossover_rate:
             param_list = self.params.keys()
             points = np.random.randint(0, 2, size=len(param_list))
 
@@ -149,3 +149,7 @@ class PopulationMember:
             self.params = self_params
             other.params = other_params
 
+    def cross_members(self, other, crossover_rate):
+        if np.random.rand() < crossover_rate:
+            for param in self.params.keys():
+                self.search_space[param].cross_param(self.params[param], other.params[param])
