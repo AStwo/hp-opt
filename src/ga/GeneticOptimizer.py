@@ -109,11 +109,13 @@ class Population:
     def crossover(self, crossover_rate):
         pairs = np.random.choice(self.members, self.size // 2 * 2, replace=False).reshape(self.size // 2, 2)
         for parents in pairs:
-            parents[0].cross_members(parents[1], crossover_rate)
+            if np.random.rand() < crossover_rate:
+                parents[0].cross_members(parents[1])
 
     def mutation(self, mutation_rate):
         for member in self.members:
-            member.mutate(mutation_rate)
+            if np.random.random() < mutation_rate:
+                member.mutate()
 
     @staticmethod
     def rescale(x, min_value=0, max_value=1):
@@ -130,26 +132,10 @@ class PopulationMember:
     def calculate_fitness(self, eval_function):
         self.fitness = eval_function(**self.params)
 
-    def mutate(self, mutation_rate):
-        if np.random.random() < mutation_rate:
-            param = np.random.choice(list(self.params))
-            self.params[param] = self.search_space[param].mutate_param(self.params[param])
+    def mutate(self):
+        param = np.random.choice(list(self.params))
+        self.params[param] = self.search_space[param].mutate_param(self.params[param])
 
-    def cross_members_(self, other, crossover_rate):
-        # Uniform crossover
-        if np.random.rand() < crossover_rate:
-            param_list = self.params.keys()
-            points = np.random.randint(0, 2, size=len(param_list))
-
-            self_params = {param: self.params[param] if add_to_self else other.params[param]
-                           for add_to_self, param in zip(points, param_list)}
-            other_params = {param: self.params[param] if not add_to_self else other.params[param]
-                            for add_to_self, param in zip(points, param_list)}
-
-            self.params = self_params
-            other.params = other_params
-
-    def cross_members(self, other, crossover_rate):
-        if np.random.rand() < crossover_rate:
-            for param in self.params.keys():
-                self.search_space[param].cross_param(self.params[param], other.params[param])
+    def cross_members(self, other):
+        for param in self.params.keys():
+            self.search_space[param].cross_param(self.params[param], other.params[param])
