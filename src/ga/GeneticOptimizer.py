@@ -23,6 +23,7 @@ class GeneticOptimizer:
 
     def optimize(self, eval_function, iterations=None, metric_target=None, early_stop=None, objective="min"):
         assert iterations is not None or metric_target is not None, "No stop conditions were specified."
+        assert objective in ("min", "max")
 
         argbest: Callable = np.argmin if objective == "min" else np.argmax
         early_stop_counter = 0
