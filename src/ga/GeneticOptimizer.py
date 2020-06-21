@@ -94,8 +94,9 @@ class Population:
         self.nominal_fitness = np.array([member.fitness for member in self.members])
 
         if objective == "max":
-            total_fitness = np.sum(self.nominal_fitness)
-            self.normalized_fitness = self.nominal_fitness / total_fitness
+            scaled_fitness = self.rescale(self.nominal_fitness, 1, 2)
+            total_fitness = np.sum(scaled_fitness)
+            self.normalized_fitness = scaled_fitness / total_fitness
         elif objective == "min":
             if np.all(self.nominal_fitness == np.zeros_like(self.nominal_fitness)):
                 scaled_fitness = np.ones_like(self.nominal_fitness)
