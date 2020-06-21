@@ -117,7 +117,7 @@ class Population:
     def mutation(self, mutation_rate, i, i_max):
         for member in self.members:
             if np.random.random() < mutation_rate:
-                member.mutate(i, i_max)
+                member.mutate(i=i, i_max=i_max)
 
     @staticmethod
     def rescale(x, min_value=0, max_value=1):
@@ -134,9 +134,9 @@ class PopulationMember:
     def calculate_fitness(self, eval_function):
         self.fitness = eval_function(**self.params)
 
-    def mutate(self, i, i_max):
+    def mutate(self, **kwargs):
         param = np.random.choice(list(self.params))
-        self.params[param] = self.search_space[param].mutate_param(self.params[param], i, i_max)
+        self.params[param] = self.search_space[param].mutate_param(self.params[param], **kwargs)
 
     def cross_members(self, other):
         for param in self.params.keys():
