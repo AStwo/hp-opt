@@ -143,4 +143,7 @@ class PopulationMember:
 
     def cross_members(self, other):
         for param in self.params.keys():
-            self.search_space[param].cross_param(self.params[param], other.params[param])
+            self.params[param], other.params[param] = self.search_space[param].cross_param(self.params[param], other.params[param])
+
+    def __repr__(self):
+        return str(self.params)
