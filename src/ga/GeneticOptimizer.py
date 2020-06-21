@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from copy import deepcopy
 from typing import Callable
 
 
@@ -108,6 +109,7 @@ class Population:
 
     def selection(self):
         self.members = np.random.choice(self.members, size=self.size, replace=True, p=self.normalized_fitness)
+        self.members = np.array([deepcopy(m) for m in self.members])
 
     def crossover(self, crossover_rate):
         pairs = np.random.choice(self.members, self.size // 2 * 2, replace=False).reshape(self.size // 2, 2)
