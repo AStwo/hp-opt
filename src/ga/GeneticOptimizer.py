@@ -38,7 +38,7 @@ class GeneticOptimizer:
             self.hist_target.append(self.population.members[best_member_idx].fitness)
 
             try:
-                if (objective == "min" and self.population.members[best_member_idx].fitness < self.best_solution)\
+                if (objective == "min" and self.population.members[best_member_idx].fitness < self.best_solution) \
                         or (objective == "max" and self.population.members[best_member_idx].fitness > self.best_solution):
                     self.best_solution = self.population.members[best_member_idx].fitness
                     early_stop_counter = 0
@@ -98,9 +98,8 @@ class Population:
             total_fitness = np.sum(scaled_fitness)
             self.normalized_fitness = scaled_fitness / total_fitness
         elif objective == "min":
-            if np.all(self.nominal_fitness == np.zeros_like(self.nominal_fitness)):
-                scaled_fitness = np.ones_like(self.nominal_fitness)
-            elif np.all(self.nominal_fitness == self.nominal_fitness[0]):
+            if np.all(self.nominal_fitness == np.zeros_like(self.nominal_fitness)) \
+                    or np.all(self.nominal_fitness == self.nominal_fitness[0]):
                 scaled_fitness = np.ones_like(self.nominal_fitness)
             else:
                 scaled_fitness = self.rescale(self.nominal_fitness, 1, 2)
