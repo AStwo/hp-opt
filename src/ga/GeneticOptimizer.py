@@ -4,7 +4,9 @@ from typing import Callable
 
 
 class GeneticOptimizer:
-    def __init__(self, search_space: dict, population_size, crossover_rate, mutation_rate):
+    def __init__(self, search_space: dict, population_size, crossover_rate, mutation_rate, seed=None):
+        if seed is not None:
+            np.random.seed(seed)
         self.search_space = search_space
 
         # GA params
@@ -19,10 +21,8 @@ class GeneticOptimizer:
         self.best_solution = None
         self.best_target = None
 
-    def optimize(self, eval_function, iterations=None, metric_target=None, early_stop=None, objective="min", seed=None):
+    def optimize(self, eval_function, iterations=None, metric_target=None, early_stop=None, objective="min"):
         assert iterations is not None or metric_target is not None, "No stop conditions were specified."
-        if seed is not None:
-            np.random.seed(seed)
 
         argbest: Callable = np.argmin if objective == "min" else np.argmax
         early_stop_counter = 0
