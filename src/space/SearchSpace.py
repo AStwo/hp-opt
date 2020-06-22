@@ -16,7 +16,7 @@ class Uniform:
         else:
             r = -np.random.uniform(value - self.min)
 
-        return value + r * (1-np.random.rand()**((1-i/i_max)))
+        return value + r * np.random.rand() * (1 - i/i_max) ** 1
 
     def cross_param(self, self_value, other_value, alpha=0.5):
         interval_length = (1 + 2 * alpha) * abs(self_value - other_value)
@@ -45,7 +45,7 @@ class UniformInt:
             r = np.random.uniform(self.max - value)
         else:
             r = -np.random.uniform(value - self.min)
-        return value + round(r * (1-np.random.rand()**((1-i/i_max))))
+        return value + r * np.random.rand() * (1 - i/i_max) ** 1
 
     def cross_param(self, self_value, other_value, alpha=0.5):
         interval_length = (1 + 2 * alpha) * abs(self_value - other_value)
