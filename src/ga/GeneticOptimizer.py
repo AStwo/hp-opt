@@ -31,7 +31,7 @@ class GeneticOptimizer:
         i = 0
 
         while True:
-            self.population.fitness(eval_function, objective=objective)
+            self.population.calculate_population_fitness(eval_function, objective=objective)
 
             best_member_idx = argbest(self.population.normalized_fitness)
             self.hist_params.append(self.population.members[best_member_idx].params)
@@ -88,9 +88,9 @@ class Population:
         self.nominal_fitness = None
         self.normalized_fitness = None
 
-    def fitness(self, eval_function, objective="min"):
+    def calculate_population_fitness(self, eval_function, objective="min"):
         assert objective in ("min", "max")
-        [member.calculate_fitness(eval_function) for member in self.members]
+        [member.calculate_member_fitness(eval_function) for member in self.members]
         self.nominal_fitness = np.array([member.fitness for member in self.members])
 
         if objective == "max":
@@ -134,7 +134,7 @@ class PopulationMember:
         self.fitness = None
         self.normalized_fitness = None
 
-    def calculate_fitness(self, eval_function):
+    def calculate_member_fitness(self, eval_function):
         self.fitness = eval_function(**self.params)
 
     def mutate(self, **kwargs):
