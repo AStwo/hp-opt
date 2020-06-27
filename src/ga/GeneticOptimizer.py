@@ -1,3 +1,5 @@
+import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
@@ -106,6 +108,10 @@ class Population:
 
             total_fitness = np.sum(1 / scaled_fitness)
             self.normalized_fitness = (1 / scaled_fitness) / total_fitness
+
+        # Update members normalized fitness
+        for member, nfit in zip(self.members, self.normalized_fitness):
+            member.normalized_fitness = nfit
 
     def selection(self):
         self.members = np.random.choice(self.members, size=self.size, replace=True, p=self.normalized_fitness)
