@@ -118,7 +118,10 @@ class Population:
 
     @staticmethod
     def rescale(x, min_value=0, max_value=1):
-        return (x - x.min()) / (x.max() - x.min()) * (max_value - min_value) + min_value
+        if np.all(x == x[0]):
+            return np.ones_like(x)
+        else:
+            return (x - x.min()) / (x.max() - x.min()) * (max_value - min_value) + min_value
 
 
 class PopulationMember:
