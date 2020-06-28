@@ -12,9 +12,9 @@ class Uniform:
 
     def mutate_param(self, value, i, i_max):
         if np.random.choice([0, 1]):
-            r = np.random.uniform(self.max - value)
+            r = np.random.uniform(high=self.max-value)
         else:
-            r = -np.random.uniform(value - self.min)
+            r = -np.random.uniform(high=value-self.min)
 
         return value + r * np.random.rand() * (1 - i/i_max) ** 1
 
