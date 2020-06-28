@@ -99,7 +99,10 @@ class Population:
             member.normalized_fitness = nfit
 
     def selection(self):
-        self.members = np.random.choice(self.members, size=self.size, replace=True, p=self.normalized_fitness)
+        # Ranking selection
+        ranks = self.normalized_fitness.argsort().argsort() + 1
+        p = ranks / ranks.sum()
+        self.members = np.random.choice(self.members, size=self.size, replace=True, p=p)
         self.members = np.array([deepcopy(m) for m in self.members])
 
     def crossover(self, crossover_rate):
