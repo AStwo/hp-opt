@@ -1,9 +1,6 @@
-import datetime
-
 import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
-from typing import Callable
 
 
 class GeneticOptimizer:
@@ -97,7 +94,7 @@ class Population:
         total_fitness = np.sum(scaled_fitness)
         self.normalized_fitness = scaled_fitness / total_fitness
 
-        # Update members normalized fitness
+        # Update members' normalized fitness
         for member, nfit in zip(self.members, self.normalized_fitness):
             member.normalized_fitness = nfit
 
