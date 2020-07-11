@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
 
+import src.ga.operators as op
+
 
 class GeneticOptimizer:
     def __init__(self, search_space: dict, population_size, crossover_rate, mutation_rate, seed=None):
@@ -108,7 +110,7 @@ class Population:
         pairs = np.random.choice(self.members, self.size // 2 * 2, replace=False).reshape(self.size // 2, 2)
         for parents in pairs:
             if np.random.rand() < crossover_rate:
-                parents[0].cross_members(parents[1])
+                parents[0].cross(parents[1])
 
     def mutation(self, mutation_rate, i, i_max):
         for member in self.members:
@@ -134,13 +136,29 @@ class PopulationMember:
         self.fitness = sign * eval_function(**self.params)
         return self.fitness
 
-    def mutate(self, **kwargs):
+    def mutate(self, i, i_max):
         param = np.random.choice(list(self.params))
-        self.params[param] = self.search_space[param].mutate_param(self.params[param], **kwargs)
+        if type(self.search_space[param]).__name__ == "Uniform":
+            self.params[param] = op.mutation_uniform(
+                self.search_space[param], self.params[param], i, i_max, round_values=False)
+        elif type(self.search_space[param]).__name__ == "UniformInt":
+            self.params[param] = op.mutation_uniform(
+                self.search_space[param], self.params[param], i, i_max, round_values=True)
+        elif type(self.search_space[param]).__name__ == "Choice":
+            self.params[param] = op.mutation_choice(
+                self.search_space[param], self.params[param])
 
-    def cross_members(self, other):
+    def cross(self, other):
         for param in self.params.keys():
-            self.params[param], other.params[param] = self.search_space[param].cross_param(self.params[param], other.params[param])
+            if type(self.search_space[param]).__name__ == "Uniform":
+                self.params[param], other.params[param] = op.crossover_uniform(
+                    self.search_space[param], self.params[param], other.params[param], round_values=False)
+            elif type(self.search_space[param]).__name__ == "UniformInt":
+                self.params[param], other.params[param] = op.crossover_uniform(
+                    self.search_space[param], self.params[param], other.params[param], round_values=True)
+            elif type(self.search_space[param]).__name__ == "Choice":
+                self.params[param], other.params[param] = op.crossover_choice(
+                    self.params[param], other.params[param])
 
     def __repr__(self):
         return str(self.params)
