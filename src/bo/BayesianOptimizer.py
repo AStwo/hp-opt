@@ -50,7 +50,7 @@ class GaussianRegressor:
 
     def fit(self, X, y):
         self.X = X
-        self.y = y
+        self.y = y.reshape(-1, 1)
         self.optimize()
         self.var = self.kernel(X, X, noise=self.noise, **self.kernel_params)
 
@@ -79,7 +79,6 @@ class GaussianRegressor:
         start_params = np.fromiter(self.kernel_params.values(), dtype=float)
 
         bounds = ((1e-1, None), (1e-1, None), (1e-1, None))
-        # ToDo: multiple runs
 
         res_params = []
         res_target = []
@@ -90,6 +89,4 @@ class GaussianRegressor:
 
         best_params = res_params[np.argmin(res_target)]
 
-        print(res_target)
-        print(best_params)
         self.kernel_params.update(dict(zip(keys, best_params)))
