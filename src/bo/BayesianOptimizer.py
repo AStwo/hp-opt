@@ -38,7 +38,7 @@ def expected_improvement(mu, std, f_best):
 class GaussianRegressor:
     def __init__(self, kernel, mean=mean_const, noise=True, **kwargs):
         self.kernel = kernel
-        self.kernel_params = {"l": 10.0, "sigma_f": 10.0, "sigma_y": 0.1}
+        self.kernel_params = {"l": 1.0, "sigma_f": 1.0, "sigma_y": 0.1}
         self.kernel_params.update(kwargs)
         self.mean = mean
         self.noise = noise
@@ -74,7 +74,7 @@ class GaussianRegressor:
             if not (det_var := det(var)):
                 return np.array([[1e+6]])
 
-            return 0.5 * (self.y.T.dot(inv(var)).dot(self.y) + np.log(det(var)) + len(self.y)*np.log(2*np.pi))
+            return 0.5 * (self.y.T.dot(inv(var)).dot(self.y) + np.log(det_var) + len(self.y)*np.log(2*np.pi))
 
         start_params = np.fromiter(self.kernel_params.values(), dtype=float)
 
