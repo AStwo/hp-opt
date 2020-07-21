@@ -16,6 +16,12 @@ class BayesianOptimizer:
 
 
 def kernel_rbf(x1, x2, noise=False, l=1.0, sigma_f=1.0, sigma_y=1e-8):
+    # Validate input
+    if len(x1.shape) == 1:
+        x1 = x1.reshape(1, -1)
+    if len(x2.shape) == 1:
+        x2 = x2.reshape(1, -1)
+
     dist_2 = cdist(x1, x2) ** 2
     matrix = sigma_f**2 * np.exp(-0.5 / l**2 * dist_2)
     if noise:
@@ -28,11 +34,32 @@ def mean_const(X):
     return np.zeros((X.shape[0], 1))
 
 
-def expected_improvement(mu, std, f_best):
+def expected_improvement(X, gpr, f_best):
+    mu, std = gpr.predict(X)
+
     z = np.divide(mu - f_best, std, out=np.zeros_like(mu), where=(std != 0))
     ei = (mu - f_best) * norm.cdf(z) + std * norm.pdf(z)
 
     return ei
+
+
+def optimize_acquisition(acquisition, gpr, f_best, bounds, runs=10):
+    def obj(x):
+        x = x.reshape(1, -1)
+        return -acquisition(x, gpr, f_best)
+
+    res_params = []
+    res_target = []
+    for i in range(runs):
+        # x0 = np.array([[np.random.uniform(-3, 3, 2)]]) # todo: get random point
+        # x0 = np.random.uniform(-3, 3, 2).reshape(-1, 2)
+        x0 = np.array([[np.random.uniform(-3, 3)]])
+        res = minimize(obj, x0=x0, method="L-BFGS-B", bounds=bounds)
+        res_params.append(res.x)
+        res_target.append(res.fun)
+
+    best_params = res_params[np.argmin(res_target)]
+    return best_params
 
 
 class GaussianRegressor:
