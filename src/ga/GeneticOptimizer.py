@@ -15,11 +15,11 @@ class GeneticOptimizer:
         self.population_size = population_size
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
+        self.population = Population(population_size, search_space)
 
+        # Optimization
         self.hist_params = []
         self.hist_target = []
-
-        self.population = Population(population_size, search_space)
         self.best_solution = None
         self.best_target = None
 
