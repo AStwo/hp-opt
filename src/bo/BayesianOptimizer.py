@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 from scipy.optimize import minimize
@@ -10,9 +11,101 @@ class BayesianOptimizer:
         if seed is not None:
             np.random.seed(seed)
         self.search_space = search_space
+        self.kernel = kernel_rbf
+        self.mean = mean_const
+        self.acquisition_fun = expected_improvement
 
-    def optimize(self):
-        pass
+        # Optimization
+        self.hist_params = []
+        self.hist_target = []
+        self.best_solution = None
+        self.best_target = None
+
+    def optimize(self, eval_function, iterations, metric_target=None, early_stop=None, objective="min", starting_points=3):
+        assert objective in ("min", "max")
+
+        # Prepare variables
+        early_stop_counter = 0
+        i = 0
+        sign = 1 if objective == "max" else -1
+        if metric_target is not None:
+            metric_target *= sign
+
+        # Initialize starting points
+        X = np.array([self.get_random_point(self.search_space) for _ in range(starting_points)])
+        y = np.array([eval_function(*solution) for solution in X])
+        self.best_target = y[np.argmin(y)]
+        self.best_solution = X[np.argmin(y)]
+
+        # Prepare param grid
+        param_bounds = self.get_param_bounds(self.search_space)
+
+        while True:
+            gpr = GaussianRegressor(kernel=self.kernel)
+            gpr.fit(X, y)
+
+            proposed_solution = self.optimize_acquisition(self.acquisition_fun, gpr, self.best_target, self.search_space, param_bounds)
+            proposed_target = eval_function(*proposed_solution)
+
+            self.hist_params.append(proposed_solution)
+            self.hist_target.append(sign * proposed_target)
+
+            X = np.vstack((X, proposed_solution))
+            y = np.append(y, proposed_target)
+
+            # Update best target
+            if proposed_target >= self.best_target:
+                self.best_target = proposed_target
+                early_stop_counter = 0
+
+            if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter, metric_target):
+                break
+            else:
+                early_stop_counter += 1
+                i += 1
+
+    @staticmethod
+    def get_random_point(search_space):
+        return np.array([param.get_value() for param in search_space.values()])
+
+    @staticmethod
+    def get_param_bounds(search_space):
+        # todo: add min and max for Choice params
+        return tuple((param.min, param.max) for param in search_space.values())
+
+    @staticmethod
+    def optimize_acquisition(acquisition, gpr, f_best, search_space, bounds, runs=10):
+        def obj(x):
+            x = x.reshape(1, -1)
+            return -acquisition(x, gpr, f_best)
+
+        res_params = []
+        res_target = []
+        for i in range(runs):
+            x0 = BayesianOptimizer.get_random_point(search_space)
+            res = minimize(obj, x0=x0, method="L-BFGS-B", bounds=bounds)
+            res_params.append(res.x)
+            res_target.append(res.fun)
+
+        best_params = res_params[np.argmin(res_target)]
+        return best_params
+
+    # todo: move to optimizer class
+    def optimization_stop_conditions(self, i, iterations, early_stop, early_stop_counter, metric_target):
+        if i >= iterations:
+            print("Optimization stopped reaching maximum number of iterations")
+            return True
+        if early_stop is not None and early_stop_counter >= early_stop:
+            print("Early stop criteria met after {} iterations".format(i + 1))
+            return True
+        if metric_target is not None and self.hist_target[-1] >= metric_target:
+            print("Metric target reached after {} iterations".format(i + 1))
+            return True
+        return False
+
+    def plot_solution_history(self):
+        plt.scatter(x=range(len(self.hist_target)), y=self.hist_target, s=10)
+        plt.scatter(x=np.where(np.array(self.hist_target) == self.best_target)[0][0], y=self.best_target, color="red")
 
 
 def kernel_rbf(x1, x2, noise=False, l=1.0, sigma_f=1.0, sigma_y=1e-8):
@@ -41,25 +134,6 @@ def expected_improvement(X, gpr, f_best):
     ei = (mu - f_best) * norm.cdf(z) + std * norm.pdf(z)
 
     return ei
-
-
-def optimize_acquisition(acquisition, gpr, f_best, bounds, runs=10):
-    def obj(x):
-        x = x.reshape(1, -1)
-        return -acquisition(x, gpr, f_best)
-
-    res_params = []
-    res_target = []
-    for i in range(runs):
-        # x0 = np.array([[np.random.uniform(-3, 3, 2)]]) # todo: get random point
-        # x0 = np.random.uniform(-3, 3, 2).reshape(-1, 2)
-        x0 = np.array([[np.random.uniform(-3, 3)]])
-        res = minimize(obj, x0=x0, method="L-BFGS-B", bounds=bounds)
-        res_params.append(res.x)
-        res_target.append(res.fun)
-
-    best_params = res_params[np.argmin(res_target)]
-    return best_params
 
 
 class GaussianRegressor:
