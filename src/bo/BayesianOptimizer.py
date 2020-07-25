@@ -40,8 +40,10 @@ class BayesianOptimizer:
         # Prepare param grid
         param_bounds = self.get_param_bounds(self.search_space)
 
+        # Initialize gaussian process
+        gpr = GaussianRegressor(kernel=self.kernel)
+
         while True:
-            gpr = GaussianRegressor(kernel=self.kernel)
             gpr.fit(X, y)
 
             proposed_solution = self.optimize_acquisition(self.acquisition_fun, gpr, self.best_target, self.search_space, param_bounds)
@@ -177,17 +179,15 @@ class GaussianRegressor:
 
             return 0.5 * (self.y.T.dot(inv(var)).dot(self.y) + np.log(det_var) + len(self.y)*np.log(2*np.pi))
 
-        start_params = np.fromiter(self.kernel_params.values(), dtype=float)
-
         bounds = ((1e-1, None), (1e-1, None), (1e-1, None))
 
         res_params = []
         res_target = []
         for i in range(runs):
+            start_params = np.array([np.random.exponential(value) for value in self.kernel_params.values()])
             res = minimize(log_likelihood, start_params, bounds=bounds, method="L-BFGS-B")
             res_params.append(res.x)
             res_target.append(res.fun[0][0])
 
         best_params = res_params[np.argmin(res_target)]
-
         self.kernel_params.update(dict(zip(keys, best_params)))
