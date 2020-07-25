@@ -37,6 +37,9 @@ class BayesianOptimizer:
         self.best_target = y[np.argmin(y)]
         self.best_solution = X[np.argmin(y)]
 
+        self.hist_target.append(self.best_target)
+        self.hist_params.append(self.hist_params)
+
         # Prepare param grid
         param_bounds = self.get_param_bounds(self.search_space)
 
