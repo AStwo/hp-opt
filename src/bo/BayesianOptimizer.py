@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
-from scipy.optimize import minimize
+from scipy.optimize import basinhopping
 from scipy.spatial.distance import cdist
 from numpy.linalg import det, inv
 
@@ -85,15 +85,11 @@ class BayesianOptimizer:
             x = x.reshape(1, -1)
             return -acquisition(x, gpr, f_best)
 
-        res_params = []
-        res_target = []
-        for i in range(runs):
-            x0 = BayesianOptimizer.get_random_point(search_space)
-            res = minimize(obj, x0=x0, method="L-BFGS-B", bounds=bounds)
-            res_params.append(res.x)
-            res_target.append(res.fun)
+        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
+        x0 = BayesianOptimizer.get_random_point(search_space)
+        res = basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
+        best_params = res.x
 
-        best_params = res_params[np.argmin(res_target)]
         return best_params
 
     # todo: move to optimizer class
@@ -183,15 +179,11 @@ class GaussianRegressor:
 
             return 0.5 * (self.y.T.dot(inv(var)).dot(self.y) + np.log(det_var) + len(self.y)*np.log(2*np.pi))
 
-        bounds = ((1e-1, None), (1e-1, None), (1e-1, None))
+        bounds = ((1e-2, 5), (1e-1, None), (1e-1, None))
 
-        res_params = []
-        res_target = []
-        for i in range(runs):
-            start_params = np.array([np.random.exponential(value) for value in self.kernel_params.values()])
-            res = minimize(log_likelihood, start_params, bounds=bounds, method="L-BFGS-B")
-            res_params.append(res.x)
-            res_target.append(res.fun[0][0])
+        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
+        x0 = np.array([np.random.exponential(value) for value in self.kernel_params.values()])
+        res = basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
+        best_params = res.x
 
-        best_params = res_params[np.argmin(res_target)]
         self.kernel_params.update(dict(zip(keys, best_params)))
