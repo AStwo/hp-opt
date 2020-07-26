@@ -33,12 +33,12 @@ class BayesianOptimizer:
 
         # Initialize starting points
         X = np.array([self.get_random_point(self.search_space) for _ in range(starting_points)])
-        y = np.array([eval_function(*solution) for solution in X])
-        self.best_target = y[np.argmin(y)]
-        self.best_solution = X[np.argmin(y)]
+        y = np.array([sign * eval_function(*solution) for solution in X])
+        self.best_solution = X[np.argmax(y)]
+        self.best_target = y[np.argmax(y)]
 
-        self.hist_target.append(self.best_target)
         self.hist_params.append(self.hist_params)
+        self.hist_target.append(sign * self.best_target)
 
         # Prepare param grid
         param_bounds = self.get_param_bounds(self.search_space)
@@ -50,7 +50,7 @@ class BayesianOptimizer:
             gpr.fit(X, y)
 
             proposed_solution = self.optimize_acquisition(self.acquisition_fun, gpr, self.best_target, self.search_space, param_bounds)
-            proposed_target = eval_function(*proposed_solution)
+            proposed_target = sign * eval_function(*proposed_solution)
 
             self.hist_params.append(proposed_solution)
             self.hist_target.append(sign * proposed_target)
@@ -64,6 +64,7 @@ class BayesianOptimizer:
                 early_stop_counter = 0
 
             if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter, metric_target):
+                self.best_target *= sign
                 break
             else:
                 early_stop_counter += 1
