@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from joblib import Parallel, delayed
 from scipy.stats import norm
 from scipy.optimize import basinhopping
 from scipy.spatial.distance import cdist
@@ -85,12 +86,17 @@ class BayesianOptimizer:
             x = x.reshape(1, -1)
             return -acquisition(x, gpr, f_best)
 
-        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
-        x0 = BayesianOptimizer.get_random_point(search_space)
-        res = basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
-        best_params = res.x
+        def find_min():
+            x0 = BayesianOptimizer.get_random_point(search_space)
+            return basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
 
-        return best_params
+        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
+
+        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(10))
+        hist_params = [r.x for r in res]
+        hist_target = [r.fun for r in res]
+
+        return hist_params[np.argmin(hist_target )]
 
     # todo: move to optimizer class
     def optimization_stop_conditions(self, i, iterations, early_stop, early_stop_counter, metric_target):
