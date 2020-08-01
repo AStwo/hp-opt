@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 
-import src.ga.operators as op
+import src.ga.utils as utils
 from src.opt.BaseOptimizer import BaseOptimizer
 
 
@@ -115,25 +115,25 @@ class PopulationMember:
     def mutate(self, i, i_max):
         param = np.random.choice(list(self.params))
         if type(self.search_space[param]).__name__ == "Uniform":
-            self.params[param] = op.mutation_uniform(
+            self.params[param] = utils.mutation_uniform(
                 self.search_space[param], self.params[param], i, i_max, round_values=False)
         elif type(self.search_space[param]).__name__ == "UniformInt":
-            self.params[param] = op.mutation_uniform(
+            self.params[param] = utils.mutation_uniform(
                 self.search_space[param], self.params[param], i, i_max, round_values=True)
         elif type(self.search_space[param]).__name__ == "Choice":
-            self.params[param] = op.mutation_choice(
+            self.params[param] = utils.mutation_choice(
                 self.search_space[param], self.params[param])
 
     def cross(self, other):
         for param in self.params.keys():
             if type(self.search_space[param]).__name__ == "Uniform":
-                self.params[param], other.params[param] = op.crossover_uniform(
+                self.params[param], other.params[param] = utils.crossover_uniform(
                     self.search_space[param], self.params[param], other.params[param], round_values=False)
             elif type(self.search_space[param]).__name__ == "UniformInt":
-                self.params[param], other.params[param] = op.crossover_uniform(
+                self.params[param], other.params[param] = utils.crossover_uniform(
                     self.search_space[param], self.params[param], other.params[param], round_values=True)
             elif type(self.search_space[param]).__name__ == "Choice":
-                self.params[param], other.params[param] = op.crossover_choice(
+                self.params[param], other.params[param] = utils.crossover_choice(
                     self.params[param], other.params[param])
 
     def __repr__(self):
