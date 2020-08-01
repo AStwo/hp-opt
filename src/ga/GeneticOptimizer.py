@@ -1,15 +1,13 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
 
 import src.ga.operators as op
+from src.opt.BaseOptimizer import BaseOptimizer
 
 
-class GeneticOptimizer:
+class GeneticOptimizer(BaseOptimizer):
     def __init__(self, search_space: dict, population_size, crossover_rate, mutation_rate, seed=None):
-        if seed is not None:
-            np.random.seed(seed)
-        self.search_space = search_space
+        super().__init__(search_space, seed)
 
         # GA params
         self.population_size = population_size
@@ -17,18 +15,15 @@ class GeneticOptimizer:
         self.mutation_rate = mutation_rate
         self.population = Population(population_size, search_space)
 
-        # Optimization
-        self.hist_params = []
-        self.hist_target = []
-        self.best_solution = None
-        self.best_target = None
-
     def optimize(self, eval_function, iterations, metric_target=None, early_stop=None, objective="min"):
         assert objective in ("min", "max")
 
+        # Prepare variables
         early_stop_counter = 0
         i = 0
         sign = 1 if objective == "max" else -1
+        if metric_target is not None:
+            metric_target *= sign
 
         while True:
             self.population.calculate_population_fitness(eval_function, objective=objective)
@@ -49,7 +44,8 @@ class GeneticOptimizer:
             self.population.crossover(self.crossover_rate)
             self.population.mutation(self.mutation_rate, i, iterations)
 
-            if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter, objective, metric_target):
+            if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter,
+                                                 self.hist_target, metric_target):
                 break
             else:
                 early_stop_counter += 1
@@ -58,26 +54,6 @@ class GeneticOptimizer:
         best_idx = np.argmax(self.hist_target) if objective == "max" else np.argmin(self.hist_target)
         self.best_solution = self.hist_params[best_idx]
         self.best_target = self.hist_target[best_idx]
-
-    def optimization_stop_conditions(self, i, iterations, early_stop, early_stop_counter, objective, metric_target):
-        if not len(self.population.members):
-            print("Optimization stopped after {} iterations".format(i + 1))
-            return True
-        if i >= iterations:
-            print("Optimization stopped reaching maximum number of iterations")
-            return True
-        if early_stop is not None and early_stop_counter >= early_stop:
-            print("Early stop criteria met after {} iterations".format(i + 1))
-            return True
-        if (metric_target is not None and objective == "min" and self.hist_target[-1] <= metric_target) \
-                or (metric_target is not None and objective == "max" and self.hist_target[-1] >= metric_target):
-            print("Metric target reached after {} iterations".format(i + 1))
-            return True
-        return False
-
-    def plot_solution_history(self):
-        plt.scatter(x=range(len(self.hist_target)), y=self.hist_target, s=10)
-        plt.scatter(x=np.where(np.array(self.hist_target) == self.best_target)[0][0], y=self.best_target, color="red")
 
 
 class Population:

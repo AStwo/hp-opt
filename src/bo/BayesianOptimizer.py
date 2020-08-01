@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.stats import norm
@@ -6,21 +5,16 @@ from scipy.optimize import basinhopping
 from scipy.spatial.distance import cdist
 from numpy.linalg import det, inv
 
+from src.opt.BaseOptimizer import BaseOptimizer
 
-class BayesianOptimizer:
+
+class BayesianOptimizer(BaseOptimizer):
     def __init__(self, search_space, seed=None):
-        if seed is not None:
-            np.random.seed(seed)
-        self.search_space = search_space
+        super().__init__(search_space, seed)
+
         self.kernel = kernel_rbf
         self.mean = mean_const
         self.acquisition_fun = expected_improvement
-
-        # Optimization
-        self.hist_params = []
-        self.hist_target = []
-        self.best_solution = None
-        self.best_target = None
 
     def optimize(self, eval_function, iterations, metric_target=None, early_stop=None, objective="min", starting_points=3):
         assert objective in ("min", "max")
@@ -64,7 +58,8 @@ class BayesianOptimizer:
                 self.best_target = proposed_target
                 early_stop_counter = 0
 
-            if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter, metric_target):
+            if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter,
+                                                 self.hist_target, metric_target):
                 self.best_target *= sign
                 break
             else:
@@ -92,28 +87,11 @@ class BayesianOptimizer:
 
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
 
-        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(10))
+        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(20))
         hist_params = [r.x for r in res]
         hist_target = [r.fun for r in res]
 
         return hist_params[np.argmin(hist_target )]
-
-    # todo: move to optimizer class
-    def optimization_stop_conditions(self, i, iterations, early_stop, early_stop_counter, metric_target):
-        if i >= iterations:
-            print("Optimization stopped reaching maximum number of iterations")
-            return True
-        if early_stop is not None and early_stop_counter >= early_stop:
-            print("Early stop criteria met after {} iterations".format(i + 1))
-            return True
-        if metric_target is not None and self.hist_target[-1] >= metric_target:
-            print("Metric target reached after {} iterations".format(i + 1))
-            return True
-        return False
-
-    def plot_solution_history(self):
-        plt.scatter(x=range(len(self.hist_target)), y=self.hist_target, s=10)
-        plt.scatter(x=np.where(np.array(self.hist_target) == self.best_target)[0][0], y=self.best_target, color="red")
 
 
 def kernel_rbf(x1, x2, noise=False, l=1.0, sigma_f=1.0, sigma_y=1e-8):
