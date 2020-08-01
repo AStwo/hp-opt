@@ -121,7 +121,7 @@ class GaussianRegressor:
 
         return mu.ravel(), norm.ppf(conf) * np.sqrt(np.diag(cov).clip(0))
 
-    def optimize(self, runs=10):
+    def optimize(self, bounds, runs=5):
         keys = list(self.kernel_params.keys())
         
         def log_likelihood(params):
@@ -134,11 +134,18 @@ class GaussianRegressor:
 
             return 0.5 * (self.y.T.dot(inv(var)).dot(self.y) + np.log(det_var) + len(self.y)*np.log(2*np.pi))
 
-        bounds = ((1e-2, 5), (1e-1, None), (1e-1, None))
+        def find_min():
+            x0 = np.array([np.random.exponential(value) for value in self.kernel_params.values()])
+            return basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
+
+        bounds = ((1e-5, 1e+5), (1e-5, 1e+2), (1e-5, None))
 
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
-        x0 = np.array([np.random.exponential(value) for value in self.kernel_params.values()])
-        res = basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
-        best_params = res.x
+        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(5))
+
+        hist_params = [r.x for r in res]
+        hist_target = [r.fun for r in res]
+
+        best_params = hist_params[np.argmin(hist_target)]
 
         self.kernel_params.update(dict(zip(keys, best_params)))
