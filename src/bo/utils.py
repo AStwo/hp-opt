@@ -11,9 +11,11 @@ def kernel_rbf(x1, x2, noise=False, l=1.0, sigma_f=1.0, sigma_y=1e-8):
         x2 = x2.reshape(1, -1)
 
     dist_2 = cdist(x1, x2) ** 2
-    matrix = sigma_f**2 * np.exp(-0.5 / l**2 * dist_2)
+    k = sigma_f**2 * np.exp(-0.5 * dist_2 / l**2)
     if noise:
-        matrix += sigma_y**2 * np.eye(matrix.shape[0])
+        k += sigma_y**2 * np.eye(k.shape[0])
+
+    return k
 
     return matrix
 
