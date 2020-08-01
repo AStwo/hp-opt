@@ -15,6 +15,8 @@ class BayesianOptimizer(BaseOptimizer):
         self.kernel = kernel_rbf
         self.mean = mean_const
         self.acquisition_fun = expected_improvement
+        # Initialize gaussian process
+        self.gpr = GaussianRegressor(kernel=self.kernel)
 
     def optimize(self, eval_function, iterations, metric_target=None, early_stop=None, objective="min", starting_points=3):
         assert objective in ("min", "max")
@@ -38,13 +40,10 @@ class BayesianOptimizer(BaseOptimizer):
         # Prepare param grid
         param_bounds = self.get_param_bounds(self.search_space)
 
-        # Initialize gaussian process
-        gpr = GaussianRegressor(kernel=self.kernel)
-
         while True:
-            gpr.fit(X, y)
+            self.gpr.fit(X, y)
 
-            proposed_solution = self.optimize_acquisition(self.acquisition_fun, gpr, self.best_target, self.search_space, param_bounds)
+            proposed_solution = self.optimize_acquisition(self.acquisition_fun, self.gpr, self.best_target, self.search_space, param_bounds)
             proposed_target = sign * eval_function(*proposed_solution)
 
             self.hist_params.append(proposed_solution)
