@@ -4,19 +4,19 @@ from scipy.stats import norm
 from scipy.optimize import basinhopping
 from numpy.linalg import det, inv
 
-from src.bo.utils import kernel_rbf, mean_const, expected_improvement
+from src.bo.utils import kernel_rbf, kernel_matern, mean_const, expected_improvement
 from src.opt.BaseOptimizer import BaseOptimizer
 
 
 class BayesianOptimizer(BaseOptimizer):
-    def __init__(self, search_space, seed=None):
+    def __init__(self, search_space, gpr_kernel="rbf", seed=None):
         super().__init__(search_space, seed)
 
         self.kernel = kernel_rbf
         self.mean = mean_const
         self.acquisition_fun = expected_improvement
         # Initialize gaussian process
-        self.gpr = GaussianRegressor(kernel=self.kernel)
+        self.gpr = GaussianRegressor(kernel=gpr_kernel)
 
     def optimize(self, eval_function, iterations, metric_target=None, early_stop=None, objective="min", starting_points=3):
         assert objective in ("min", "max")
@@ -94,12 +94,15 @@ class BayesianOptimizer(BaseOptimizer):
 
 
 class GaussianRegressor:
-    def __init__(self, kernel, mean=mean_const, noise=True, **kwargs):
-        self.kernel = kernel
-        self.kernel_params = {"l": 1.0, "sigma_f": 1.0, "sigma_y": 0.1}
-        self.kernel_params.update(kwargs)
+    def __init__(self, kernel="rbf", mean=mean_const, noise=True):
         self.mean = mean
         self.noise = noise
+
+        # Kernel
+        kernels = {"rbf": kernel_rbf, "matern": kernel_matern}
+        self.kernel = kernels[kernel]
+        self.kernel_params = {"l": 1.0, "sigma_f": 1.0, "sigma_y": 0.1}
+        self.kernel_bounds = ((1e-5, 1e+5), (1e-5, 1e+3), (1e-5, None))
 
         # Args set during fit
         self.var = None
@@ -138,9 +141,7 @@ class GaussianRegressor:
             x0 = np.array([np.random.exponential(value) for value in self.kernel_params.values()])
             return basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
 
-        bounds = ((1e-5, 1e+5), (1e-5, 1e+2), (1e-5, None))
-
-        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
+        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": self.kernel_bounds}
         res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(5))
 
         hist_params = [r.x for r in res]
