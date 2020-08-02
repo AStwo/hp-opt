@@ -110,7 +110,7 @@ class GaussianRegressor:
         self.X = X
         self.y = y.reshape(-1, 1)
         self.optimize()
-        self.var = self.kernel(X, X, noise=self.noise, **self.kernel_params)
+        self.var = self.kernel(X, X, add_noise=self.noise, **self.kernel_params)
 
     def predict(self, X, conf=0.975):
         var_x_pred = self.kernel(X, X, **self.kernel_params)
@@ -121,12 +121,12 @@ class GaussianRegressor:
 
         return mu.ravel(), norm.ppf(conf) * np.sqrt(np.diag(cov).clip(0))
 
-    def optimize(self, bounds, runs=5):
+    def optimize(self, runs=5):
         keys = list(self.kernel_params.keys())
         
         def log_likelihood(params):
             dict_params = dict(zip(keys, params))
-            var = self.kernel(self.X, self.X, noise=True, **dict_params)
+            var = self.kernel(self.X, self.X, add_noise=True, **dict_params)
 
             # Safeguard against singular matrix
             if not (det_var := det(var)):
