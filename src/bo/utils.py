@@ -17,7 +17,20 @@ def kernel_rbf(x1, x2, add_noise=False, l=1.0, sigma_f=1.0, sigma_y=1e-8):
 
     return k
 
-    return matrix
+
+def kernel_matern(x1, x2, add_noise=False, l=1.0, sigma_f=1.0, sigma_y=1e-8):
+    # Validate input
+    if len(x1.shape) == 1:
+        x1 = x1.reshape(1, -1)
+    if len(x2.shape) == 1:
+        x2 = x2.reshape(1, -1)
+
+    dist = cdist(x1, x2)
+    k = sigma_f**2 * (1 + np.sqrt(5)/l * dist + 5/(3*l)*dist**2) * np.exp(-np.sqrt(5)/l * dist)
+    if add_noise:
+        k += sigma_y**2 * np.eye(k.shape[0])
+
+    return k
 
 
 def mean_const(X):
