@@ -34,7 +34,7 @@ class BayesianOptimizer(BaseOptimizer):
         self.best_solution = X[np.argmax(y)]
         self.best_target = y[np.argmax(y)]
 
-        self.hist_params.append(self.hist_params)
+        self.hist_params.append(self.best_solution)
         self.hist_target.append(sign * self.best_target)
 
         # Prepare param grid
