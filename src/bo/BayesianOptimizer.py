@@ -55,6 +55,7 @@ class BayesianOptimizer(BaseOptimizer):
             # Update best target
             if proposed_target >= self.best_target:
                 self.best_target = proposed_target
+                self.best_solution = proposed_solution
                 early_stop_counter = 0
 
             if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter,
