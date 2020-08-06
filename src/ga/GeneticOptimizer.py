@@ -33,12 +33,12 @@ class GeneticOptimizer(BaseOptimizer):
             self.hist_target.append(sign * self.population.members[best_member_idx].fitness)
 
             try:
-                if self.population.members[best_member_idx].fitness > self.best_solution:
-                    self.best_solution = self.population.members[best_member_idx].fitness
+                if self.population.members[best_member_idx].fitness > self.best_target:
+                    self.best_target = self.population.members[best_member_idx].fitness
                     early_stop_counter = 0
             except TypeError:
                 # Assign best_solution during first iteration
-                self.best_solution = self.population.members[best_member_idx].fitness
+                self.best_target = self.population.members[best_member_idx].fitness
 
             self.population.selection()
             self.population.crossover(self.crossover_rate)
@@ -66,6 +66,9 @@ class Population:
     def calculate_population_fitness(self, eval_function, objective="min"):
         sign = 1 if objective == "max" else -1
         self.nominal_fitness = np.array([member.calculate_member_fitness(eval_function, sign) for member in self.members])
+        # TODO: sprawdzić poniższe na modelach
+        # na zwykłej funkcji trwa dłużej (18s zamiast 12s)
+        # self.nominal_fitness = np.array(Parallel(n_jobs=-2, backend='threading')(delayed(member.calculate_member_fitness)(eval_function, sign) for member in self.members))
 
         scaled_fitness = self.rescale(self.nominal_fitness, 1, 2)
         total_fitness = np.sum(scaled_fitness)
