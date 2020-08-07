@@ -4,8 +4,10 @@ from scipy.stats import norm
 from scipy.optimize import basinhopping
 from numpy.linalg import det, inv
 
-from src.bo.utils import kernel_rbf, kernel_matern, mean_const, expected_improvement
+from src.bo.utils import kernel_rbf, kernel_matern, mean_const, expected_improvement, transform_kernel_input, \
+    transform_input
 from src.opt.BaseOptimizer import BaseOptimizer
+from src.space.SearchSpace import Choice
 
 
 class BayesianOptimizer(BaseOptimizer):
@@ -16,7 +18,7 @@ class BayesianOptimizer(BaseOptimizer):
         self.mean = mean_const
         self.acquisition_fun = expected_improvement
         # Initialize gaussian process
-        self.gpr = GaussianRegressor(kernel=gpr_kernel)
+        self.gpr = GaussianRegressor(search_space, kernel=gpr_kernel)
 
     def optimize(self, eval_function, iterations, metric_target=None, early_stop=None, objective="min", starting_points=3):
         assert objective in ("min", "max")
@@ -30,7 +32,7 @@ class BayesianOptimizer(BaseOptimizer):
 
         # Initialize starting points
         X = np.array([self.get_random_point(self.search_space) for _ in range(starting_points)])
-        y = np.array([sign * eval_function(*solution) for solution in X])
+        y = np.array([sign * eval_function(*self.transform_to_params(solution, self.search_space)) for solution in X])
         self.best_solution = X[np.argmax(y)]
         self.best_target = y[np.argmax(y)]
 
@@ -44,11 +46,10 @@ class BayesianOptimizer(BaseOptimizer):
             self.gpr.fit(X, y)
 
             proposed_solution = self.optimize_acquisition(self.acquisition_fun, self.gpr, self.best_target, self.search_space, param_bounds)
-            proposed_target = sign * eval_function(*proposed_solution)
+            proposed_target = sign * eval_function(*self.transform_to_params(proposed_solution, self.search_space))
 
             self.hist_params.append(proposed_solution)
             self.hist_target.append(sign * proposed_target)
-
             X = np.vstack((X, proposed_solution))
             y = np.append(y, proposed_target)
 
@@ -68,11 +69,18 @@ class BayesianOptimizer(BaseOptimizer):
 
     @staticmethod
     def get_random_point(search_space):
-        return np.array([param.get_value() for param in search_space.values()])
+        # return np.array([param.get_value() for param in search_space.values()])
+        for param in search_space.values():
+            if isinstance(param, Choice):
+                pass
+            elif param.__class__.__name__ == "Choice":
+                raise AssertionError("insinstance fucked up ---- rnd point")
+
+        return np.array([param.get_random_index() if isinstance(param, Choice)
+                         else param.get_value() for param in search_space.values()])
 
     @staticmethod
     def get_param_bounds(search_space):
-        # todo: add min and max for Choice params
         return tuple((param.min, param.max) for param in search_space.values())
 
     @staticmethod
@@ -86,22 +94,38 @@ class BayesianOptimizer(BaseOptimizer):
             return basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
 
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
-
         res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(20))
         hist_params = [r.x for r in res]
         hist_target = [r.fun for r in res]
+        # x0 = BayesianOptimizer.get_random_point(search_space)
+        # return basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs).x
 
-        return hist_params[np.argmin(hist_target )]
+        best_params = transform_input(hist_params[np.argmin(hist_target)].reshape(1, -1), search_space)[0]
+        for i, param in enumerate(search_space.values()):
+            if isinstance(param, Choice):
+                indexes = best_params[i:(i+len(param.values))]
+                best_params[i] = np.argmax(indexes)
+                best_params = np.delete(best_params, slice(i+1, i+len(param.values)))
+            elif param.__class__.__name__ == "Choice":
+                raise AssertionError("insinstance fucked up ---- acq")
+
+        return best_params
+
+    @staticmethod
+    def transform_to_params(arr, search_space):
+        x = [param.values[int(val)] if isinstance(param, Choice) else val for val, param in zip(arr, search_space.values())]
+        return x
 
 
 class GaussianRegressor:
-    def __init__(self, kernel="rbf", mean=mean_const, noise=True):
+    def __init__(self, search_space, kernel="rbf", mean=mean_const, noise=True):
         self.mean = mean
         self.noise = noise
+        self.search_space = search_space
 
         # Kernel
         kernels = {"rbf": kernel_rbf, "matern": kernel_matern}
-        self.kernel = kernels[kernel]
+        self.kernel = transform_kernel_input(kernels[kernel], self.search_space)
         self.kernel_params = {"length": [1.0], "sigma_f": 1.0, "sigma_y": 0.1}
         self.kernel_bounds = ((1e-5, 1e+3), (1e-5, 1e+2), (1e-5, None))
 
@@ -130,7 +154,7 @@ class GaussianRegressor:
 
     def optimize(self, runs=5):
         keys = list(self.kernel_params.keys())
-        
+
         def log_likelihood(params):
             dict_params = self.prepare_param_dict(keys, params)
 
@@ -144,10 +168,18 @@ class GaussianRegressor:
         def find_min():
             x0 = [np.random.exponential(value) for value in self.kernel_params.values()]
             x0 = np.array([*x0[0], *x0[1:]])  # Flatten array
+            if len(x0) != len(bounds):
+                offset = 0
+                for i, param in enumerate(self.search_space.values()):
+                    if isinstance(param, Choice):
+                        x0 = np.insert(x0, i + offset, np.repeat(x0[i + offset], len(param.values) - 1))
+                        offset += len(param.values) - 1
+                    elif param.__class__.__name__ == "Choice":
+                        raise AssertionError("insinstance fucked up ---- rnd point")
             return basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
 
         # Reshape bounds for length param
-        length_param_bounds = (self.kernel_bounds[0], ) * self.X.shape[1]
+        length_param_bounds = (self.kernel_bounds[0], ) * (transform_input(self.X, self.search_space).shape[1])
         bounds = (*length_param_bounds, *self.kernel_bounds[1:])  # Flatten array
 
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}

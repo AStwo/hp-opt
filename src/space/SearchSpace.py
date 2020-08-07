@@ -25,6 +25,11 @@ class Choice:
     def __init__(self, name, values):
         self.name = name
         self.values = np.array(values)
+        self.min = 0
+        self.max = len(values)-1
 
     def get_value(self):
         return np.random.choice(self.values)
+
+    def get_random_index(self):
+        return np.random.randint(0, len(self.values))
