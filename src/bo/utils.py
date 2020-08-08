@@ -39,6 +39,11 @@ def transform_kernel_input(kernel, search_space):
     return wrapper
 
 
+def reverse_one_hot_encoding(arr, search_space):
+    x = [param.values[int(val)] if isinstance(param, Choice) else val for val, param in zip(arr, search_space.values())]
+    return x
+
+
 def kernel_rbf(x1, x2, length=1.0, sigma_f=1.0, sigma_y=1e-8, add_noise=False):
     # Validate input
     if len(x1.shape) == 1:
