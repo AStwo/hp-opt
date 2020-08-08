@@ -31,11 +31,11 @@ class BayesianOptimizer(BaseOptimizer):
 
         # Initialize starting points
         X = np.array([self.get_random_point(self.search_space) for _ in range(starting_points)])
-        y = np.array([sign * eval_function(*utils.reverse_one_hot_encoding(solution, self.search_space)) for solution in X])
+        y = np.array([sign * eval_function(**utils.reverse_transform(solution, self.search_space)) for solution in X])
         self.best_solution = X[np.argmax(y)]
         self.best_target = y[np.argmax(y)]
 
-        self.hist_params.append(self.best_solution)
+        self.hist_params.append(utils.reverse_transform(self.best_solution, self.search_space))
         self.hist_target.append(sign * self.best_target)
 
         # Prepare param grid
@@ -45,9 +45,9 @@ class BayesianOptimizer(BaseOptimizer):
             self.gpr.fit(X, y)
 
             proposed_solution = self.optimize_acquisition(self.acquisition_fun, self.gpr, self.best_target, self.search_space, param_bounds)
-            proposed_target = sign * eval_function(*utils.reverse_one_hot_encoding(proposed_solution, self.search_space))
+            proposed_target = sign * eval_function(**utils.reverse_transform(proposed_solution, self.search_space))
 
-            self.hist_params.append(proposed_solution)
+            self.hist_params.append(utils.reverse_transform(proposed_solution, self.search_space))
             self.hist_target.append(sign * proposed_target)
             X = np.vstack((X, proposed_solution))
             y = np.append(y, proposed_target)
@@ -55,7 +55,7 @@ class BayesianOptimizer(BaseOptimizer):
             # Update best target
             if proposed_target >= self.best_target:
                 self.best_target = proposed_target
-                self.best_solution = proposed_solution
+                self.best_solution = utils.reverse_transform(proposed_solution, self.search_space)
                 early_stop_counter = 0
 
             if self.optimization_stop_conditions(i, iterations, early_stop, early_stop_counter,
