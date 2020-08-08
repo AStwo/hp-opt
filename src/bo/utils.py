@@ -14,12 +14,14 @@ def transform_input(arr, search_space):
         if isinstance(param, UniformInt):
             x[:, col_idx] = x[:, col_idx].round()
         elif isinstance(param, Choice):
+            # Prepare one-hot encoding
             x[:, col_idx] = x[:, col_idx].round()
             one_hot_encoding = np.zeros((x.shape[0], len(param.values)))
             one_hot_encoding[np.arange(x.shape[0]), x[:, col_idx].astype(int)] = 1
 
             choice_encodings[col_idx] = one_hot_encoding
 
+    # Add one-hot encoding to array
     idx_offset = 0
     for col_idx in choice_encodings.keys():
         x = np.delete(x, col_idx + idx_offset, axis=1)
