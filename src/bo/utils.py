@@ -8,21 +8,17 @@ from src.space.SearchSpace import UniformInt, Choice
 
 def transform_input(arr, search_space):
     x = arr.copy()
-    var_spaces = list(search_space.values())
     choice_encodings = {}
 
-    #todo: refactor with enumerate
-    for col_idx in range(x.shape[1]):
-        if isinstance(var_spaces[col_idx], UniformInt):
+    for col_idx, param in enumerate(search_space.values()):
+        if isinstance(param, UniformInt):
             x[:, col_idx] = x[:, col_idx].round()
-        elif isinstance(var_spaces[col_idx], Choice):
+        elif isinstance(param, Choice):
             x[:, col_idx] = x[:, col_idx].round()
-            one_hot_encoding = np.zeros((x.shape[0], len(var_spaces[col_idx].values)))
+            one_hot_encoding = np.zeros((x.shape[0], len(param.values)))
             one_hot_encoding[np.arange(x.shape[0]), x[:, col_idx].astype(int)] = 1
 
             choice_encodings[col_idx] = one_hot_encoding
-        elif var_spaces[col_idx].__class__.__name__ == "Choice":
-            raise AssertionError("insinstance fucked up -- transform input")
 
     idx_offset = 0
     for col_idx in choice_encodings.keys():
