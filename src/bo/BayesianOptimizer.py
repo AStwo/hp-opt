@@ -69,13 +69,6 @@ class BayesianOptimizer(BaseOptimizer):
 
     @staticmethod
     def get_random_point(search_space):
-        # return np.array([param.get_value() for param in search_space.values()])
-        for param in search_space.values():
-            if isinstance(param, Choice):
-                pass
-            elif param.__class__.__name__ == "Choice":
-                raise AssertionError("insinstance fucked up ---- rnd point")
-
         return np.array([param.get_random_index() if isinstance(param, Choice)
                          else param.get_value() for param in search_space.values()])
 
@@ -97,8 +90,6 @@ class BayesianOptimizer(BaseOptimizer):
         res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(20))
         hist_params = [r.x for r in res]
         hist_target = [r.fun for r in res]
-        # x0 = BayesianOptimizer.get_random_point(search_space)
-        # return basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs).x
 
         best_params = transform_input(hist_params[np.argmin(hist_target)].reshape(1, -1), search_space)[0]
         for i, param in enumerate(search_space.values()):
@@ -106,8 +97,6 @@ class BayesianOptimizer(BaseOptimizer):
                 indexes = best_params[i:(i+len(param.values))]
                 best_params[i] = np.argmax(indexes)
                 best_params = np.delete(best_params, slice(i+1, i+len(param.values)))
-            elif param.__class__.__name__ == "Choice":
-                raise AssertionError("insinstance fucked up ---- acq")
 
         return best_params
 
@@ -174,8 +163,6 @@ class GaussianRegressor:
                     if isinstance(param, Choice):
                         x0 = np.insert(x0, i + offset, np.repeat(x0[i + offset], len(param.values) - 1))
                         offset += len(param.values) - 1
-                    elif param.__class__.__name__ == "Choice":
-                        raise AssertionError("insinstance fucked up ---- rnd point")
             return basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
 
         # Reshape bounds for length param
