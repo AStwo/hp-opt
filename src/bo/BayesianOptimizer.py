@@ -148,11 +148,7 @@ class GaussianRegressor:
             x0 = [np.random.exponential(value) for value in self.kernel_params.values()]
             x0 = np.array([*x0[0], *x0[1:]])  # Flatten array
             if len(x0) != len(bounds):
-                offset = 0
-                for i, param in enumerate(self.search_space.values()):
-                    if isinstance(param, Choice):
-                        x0 = np.insert(x0, i + offset, np.repeat(x0[i + offset], len(param.values) - 1))
-                        offset += len(param.values) - 1
+                x0 = self.correct_lengths_for_one_hot_encoding(x0, self.search_space)
             return basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
 
         # Reshape bounds for length param
@@ -176,4 +172,14 @@ class GaussianRegressor:
         dict_params = dict(zip(keys, [length, *params[-2:]]))
 
         return dict_params
+
+    @staticmethod
+    def correct_lengths_for_one_hot_encoding(arr, search_space):
+        offset = 0
+        for i, param in enumerate(search_space.values()):
+            if isinstance(param, Choice):
+                arr = np.insert(arr, i + offset, np.repeat(arr[i + offset], len(param.values) - 1))
+                offset += len(param.values) - 1
+
+        return arr
 
