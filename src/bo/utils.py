@@ -47,6 +47,17 @@ def reverse_transform(arr, search_space):
     return param_dict
 
 
+def reverse_one_hot_encoding(arr, search_space):
+    x = arr.copy()
+    for col_idx, param in enumerate(search_space.values()):
+        if isinstance(param, Choice):
+            indexes = x[col_idx:(col_idx + len(param.values))]
+            x[col_idx] = np.argmax(indexes)
+            x = np.delete(x, slice(col_idx + 1, col_idx + len(param.values)))
+
+    return x
+
+
 def kernel_rbf(x1, x2, length=1.0, sigma_f=1.0, sigma_y=1e-8, add_noise=False):
     # Validate input
     if len(x1.shape) == 1:

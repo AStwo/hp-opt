@@ -91,11 +91,7 @@ class BayesianOptimizer(BaseOptimizer):
         hist_target = [r.fun for r in res]
 
         best_params = utils.transform_input(hist_params[np.argmin(hist_target)].reshape(1, -1), search_space)[0]
-        for col_idx, param in enumerate(search_space.values()):
-            if isinstance(param, Choice):
-                indexes = best_params[col_idx:(col_idx+len(param.values))]
-                best_params[col_idx] = np.argmax(indexes)
-                best_params = np.delete(best_params, slice(col_idx+1, col_idx+len(param.values)))
+        best_params = utils.reverse_one_hot_encoding(best_params, search_space)
 
         return best_params
 
