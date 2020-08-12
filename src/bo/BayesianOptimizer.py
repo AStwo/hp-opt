@@ -85,7 +85,7 @@ class BayesianOptimizer(BaseOptimizer):
             x0 = BayesianOptimizer.get_random_point(search_space)
             return minimize(obj, x0, method="L-BFGS-B", bounds=bounds)
 
-        res = Parallel(n_jobs=-2)(delayed(find_min)() for _ in range(runs))
+        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(runs))
         hist_params = [r.x for r in res]
         hist_target = [r.fun for r in res]
 
