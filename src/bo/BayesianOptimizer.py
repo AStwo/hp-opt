@@ -1,7 +1,7 @@
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.stats import norm
-from scipy.optimize import basinhopping
+from scipy.optimize import minimize
 from numpy.linalg import det, inv
 
 import src.bo.utils as utils
@@ -76,17 +76,16 @@ class BayesianOptimizer(BaseOptimizer):
         return tuple((param.min, param.max) for param in search_space.values())
 
     @staticmethod
-    def optimize_acquisition(acquisition, gpr, f_best, search_space, bounds, runs=10):
+    def optimize_acquisition(acquisition, gpr, f_best, search_space, bounds, runs=20):
         def obj(x):
             x = x.reshape(1, -1)
             return -acquisition(x, gpr, f_best)
 
         def find_min():
             x0 = BayesianOptimizer.get_random_point(search_space)
-            return basinhopping(obj, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
+            return minimize(obj, x0, method="L-BFGS-B", bounds=bounds)
 
-        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
-        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(20))
+        res = Parallel(n_jobs=-2)(delayed(find_min)() for _ in range(runs))
         hist_params = [r.x for r in res]
         hist_target = [r.fun for r in res]
 
@@ -131,7 +130,7 @@ class GaussianRegressor:
 
         return mu.ravel(), norm.ppf(conf) * np.sqrt(np.diag(cov).clip(0))
 
-    def optimize(self, runs=5):
+    def optimize(self, runs=15):
         keys = list(self.kernel_params.keys())
 
         def log_likelihood(params):
@@ -149,14 +148,13 @@ class GaussianRegressor:
             x0 = np.array([*x0[0], *x0[1:]])  # Flatten array
             if len(x0) != len(bounds):
                 x0 = self.correct_lengths_for_one_hot_encoding(x0, self.search_space)
-            return basinhopping(log_likelihood, x0, niter=runs, minimizer_kwargs=minimizer_kwargs)
+            return minimize(log_likelihood, x0, method="L-BFGS-B", bounds=bounds)
 
         # Reshape bounds for length param
         length_param_bounds = (self.kernel_bounds[0], ) * (utils.transform_input(self.X, self.search_space).shape[1])
         bounds = (*length_param_bounds, *self.kernel_bounds[1:])  # Flatten array
 
-        minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
-        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(5))
+        res = Parallel(n_jobs=-2)(delayed(find_min)() for i in range(runs))
 
         hist_params = [r.x for r in res]
         hist_target = [r.fun for r in res]
