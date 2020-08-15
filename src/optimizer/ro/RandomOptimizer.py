@@ -1,4 +1,4 @@
-from src.opt.BaseOptimizer import BaseOptimizer
+from src.optimizer.opt.BaseOptimizer import BaseOptimizer
 
 
 class RandomOptimizer(BaseOptimizer):

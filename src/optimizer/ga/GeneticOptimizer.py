@@ -1,8 +1,8 @@
 import numpy as np
 from copy import deepcopy
 
-import src.ga.utils as utils
-from src.opt.BaseOptimizer import BaseOptimizer
+import src.optimizer.ga.utils as utils
+from src.optimizer.opt.BaseOptimizer import BaseOptimizer
 
 
 class GeneticOptimizer(BaseOptimizer):

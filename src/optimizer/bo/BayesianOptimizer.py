@@ -4,8 +4,8 @@ from scipy.stats import norm
 from scipy.optimize import minimize
 from numpy.linalg import det, inv
 
-import src.bo.utils as utils
-from src.opt.BaseOptimizer import BaseOptimizer
+import src.optimizer.bo.utils as utils
+from src.optimizer.opt.BaseOptimizer import BaseOptimizer
 from src.space.SearchSpace import Choice
 
 
