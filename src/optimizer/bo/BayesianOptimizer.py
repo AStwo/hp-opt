@@ -32,10 +32,10 @@ class BayesianOptimizer(BaseOptimizer):
         # Initialize starting points
         X = np.array([self.get_random_point(self.search_space) for _ in range(starting_points)])
         y = np.array([sign * eval_function(**utils.reverse_transform(solution, self.search_space)) for solution in X])
-        self.best_solution = X[np.argmax(y)]
+        self.best_solution = utils.reverse_transform(X[np.argmax(y)], self.search_space)
         self.best_target = y[np.argmax(y)]
 
-        self.hist_params.append(utils.reverse_transform(self.best_solution, self.search_space))
+        self.hist_params.append(self.best_solution)
         self.hist_target.append(sign * self.best_target)
 
         # Prepare param grid
