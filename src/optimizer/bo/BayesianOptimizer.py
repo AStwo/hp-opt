@@ -13,13 +13,6 @@ class BayesianOptimizer(BaseOptimizer):
     def __init__(self, search_space, gpr_kernel="matern", seed=None):
         super().__init__(search_space, seed)
 
-        kernels = {
-            "rbf": utils.kernel_rbf,
-            "matern": utils.kernel_matern
-        }
-
-        self.kernel = kernels[gpr_kernel]
-        self.mean = utils.mean_const
         self.acquisition_fun = utils.expected_improvement
         # Initialize gaussian process
         self.gpr = GaussianRegressor(search_space, kernel=gpr_kernel)
