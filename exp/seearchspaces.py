@@ -23,12 +23,10 @@ def get_rtree_search_space(n_cols):
 }
 
 
-def get_rknn_search_space():
+def get_radb_search_space():
     return {
-        "n_neighbors": UniformInt("n_neighbors", 5, 50),
-        "weights": Choice("weights", ["uniform", "distance"]),
-        "algorithm": Choice("algorithm", ["ball_tree", "kd_tree", "brute"]),
-        "p": UniformInt("p", 1, 3)
+        "n_estimators": UniformInt("n_estimators", 10, 200),
+        "learning_rate": Uniform("learning_rate", .05, 2)
     }
 
 
@@ -54,10 +52,8 @@ def get_ctree_search_space(n_cols):
 }
 
 
-def get_cknn_search_space():
+def get_cadb_search_space():
     return {
-        "n_neighbors": UniformInt("n_neighbors", 5, 50),
-        "weights": Choice("weights", ["uniform", "distance"]),
-        "algorithm": Choice("algorithm", ["ball_tree", "kd_tree", "brute"]),
-        "p": UniformInt("p", 1, 3)
+        "n_estimators": UniformInt("n_estimators", 10, 200),
+        "learning_rate": Uniform("learning_rate", .05, 2)
     }
