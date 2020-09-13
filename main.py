@@ -9,7 +9,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_squared_error, accuracy_score
 
 import exp.data as data
-import exp.seearchspaces as ss
+import exp.searchspaces as ss
 from src.optimizer import RandomOptimizer, GeneticOptimizer, BayesianOptimizer
 
 
